@@ -66,7 +66,8 @@ AvrDevice_attiny2313::AvrDevice_attiny2313():
     AvrDevice(64 ,          // I/O space above General Purpose Registers
               128,          // RAM size
               0,            // External RAM size
-              2 * 1024)     // Flash Size
+              2 * 1024,     // Flash Size
+              0x1e910a)     // Signature
 {
     flagJMPInstructions = false;
     flagMULInstructions = false;

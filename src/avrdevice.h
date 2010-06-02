@@ -60,9 +60,10 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         RWMemoryMember **invalidRW; //!< hold invalid RW memory cells created by device
         const unsigned int ioSpaceSize;
         const unsigned int totalIoSpace;
-        const unsigned int registerSpaceSize;
-        const unsigned int iRamSize;
-        const unsigned int eRamSize;
+        const unsigned int registerSpaceSize; //!< size of register file
+        const unsigned int iRamSize; //!< size of internal RAM
+        const unsigned int eRamSize; //!< size of external RAM
+        const unsigned int devSignature; //!< hold the device signature for this core
         
     protected:
         SystemClockOffset clockFreq;
@@ -122,7 +123,7 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
 
         DumpManager *dump_manager;
     
-        AvrDevice(unsigned int ioSpaceSize, unsigned int IRamSize, unsigned int ERamSize, unsigned int flashSize);
+        AvrDevice(unsigned int ioSpaceSize, unsigned int IRamSize, unsigned int ERamSize, unsigned int flashSize, unsigned int signature);
         virtual ~AvrDevice();
 
         /*! Adds to the list of parts to reset. If already in that list, does
@@ -176,6 +177,8 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         unsigned int GetMemIRamSize(void) { return iRamSize; }
         //! Get configured external RAM size
         unsigned int GetMemERamSize(void) { return eRamSize; }
+        //! Get device signature
+        unsigned int GetDeviceSignature(void) { return devSignature; }
         
         //! Get a value of RW memory cell
         unsigned char GetRWMem(unsigned addr);

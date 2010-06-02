@@ -64,11 +64,13 @@ AvrDevice_atmega668base::~AvrDevice_atmega668base() {
 
 AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
                                                  unsigned flash_bytes,
-                                                 unsigned ee_bytes ):
+                                                 unsigned ee_bytes,
+                                                 unsigned signature):
     AvrDevice(224,          // I/O space above General Purpose Registers
               ram_bytes,    // RAM size
               0,            // External RAM size
-              flash_bytes), // Flash Size
+              flash_bytes,  // Flash Size
+              signature),   // Signature
     aref(),
     adc6(),
     adc7(),

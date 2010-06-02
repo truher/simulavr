@@ -80,7 +80,7 @@ class AvrDevice_atmega668base: public AvrDevice {
           @param flash_bytes how much flash memory does the device own
           @param ee_bytes how much EEPROM space does the device own */
         AvrDevice_atmega668base(unsigned ram_bytes, unsigned flash_bytes,
-                                unsigned ee_bytes );
+                                unsigned ee_bytes, unsigned signature);
         
         ~AvrDevice_atmega668base();
         
@@ -90,28 +90,28 @@ class AvrDevice_atmega668base: public AvrDevice {
 class AvrDevice_atmega328: public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega328, see AvrDevice_atmega668base.
-        AvrDevice_atmega328() : AvrDevice_atmega668base(2 * 1024, 32 * 1024, 1024) {}
+        AvrDevice_atmega328() : AvrDevice_atmega668base(2 * 1024, 32 * 1024, 1024, 0x1e950f) {}
 };
 
 //! AVR device class for ATMega168, see AvrDevice_atmega668base.
 class AvrDevice_atmega168: public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega168, see AvrDevice_atmega668base.
-        AvrDevice_atmega168() : AvrDevice_atmega668base(1024, 16 * 1024, 512) {}
+        AvrDevice_atmega168() : AvrDevice_atmega668base(1024, 16 * 1024, 512, 0x1e9406) {}
 };
 
 //! AVR device class for ATMega88, see AvrDevice_atmega668base.
 class AvrDevice_atmega88:public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega88, see AvrDevice_atmega668base.
-        AvrDevice_atmega88() : AvrDevice_atmega668base(1024, 8 * 1024, 512) {}
+        AvrDevice_atmega88() : AvrDevice_atmega668base(1024, 8 * 1024, 512, 0x1e930a) {}
 };
 
 //! AVR device class for ATMega48, see AvrDevice_atmega668base.
 class AvrDevice_atmega48:public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega48, see AvrDevice_atmega668base.
-        AvrDevice_atmega48() : AvrDevice_atmega668base(512, 4 * 1024, 256) {}
+        AvrDevice_atmega48() : AvrDevice_atmega668base(512, 4 * 1024, 256, 0x1e9205) {}
 };
 
 #endif

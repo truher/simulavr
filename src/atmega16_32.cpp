@@ -72,12 +72,14 @@ AvrDevice_atmega16_32::~AvrDevice_atmega16_32() {
 AvrDevice_atmega16_32::AvrDevice_atmega16_32(unsigned ram_bytes,
                                              unsigned flash_bytes,
                                              unsigned ee_bytes,
+                                             unsigned signature,
                                              unsigned nrww_start,
                                              bool stack11bit):
     AvrDevice(64 ,          // I/O space above General Purpose Registers
               ram_bytes,    // RAM size
               0,            // External RAM size
-              flash_bytes), // Flash Size
+              flash_bytes,  // Flash Size
+              signature),   // Signature
     aref()
 {
     irqSystem = new HWIrqSystem(this, 4, 21); //4 bytes per vector, 21 vectors

@@ -35,7 +35,7 @@
 AVR_REGISTER(at90s8515, AvrDevice_at90s8515);
 
 AvrDevice_at90s8515::AvrDevice_at90s8515():
-    AvrDevice(64, 512, 0xfda0, 8192),
+    AvrDevice(64, 512, 0xfda0, 8192, 0x1e9301),
     portx(this, "X"),
     ocr1b(portx.GetPin(0))
 { 

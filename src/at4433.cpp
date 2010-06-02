@@ -37,7 +37,7 @@
 AVR_REGISTER(at90s4433, AvrDevice_at90s4433);
 
 AvrDevice_at90s4433::AvrDevice_at90s4433():
-    AvrDevice(64, 128, 0, 4*1024)
+    AvrDevice(64, 128, 0, 4*1024, 0x1e9203)
 { 
     flagJMPInstructions = false;
     flagMULInstructions = false;

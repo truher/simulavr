@@ -57,99 +57,117 @@ void AvrDevice::RemoveFromCycleList(Hardware *hw) {
 }
 
 void AvrDevice::Load(const char* fname) {
-    actualFilename = fname;
 
     bfd *abfd;
     asection *sec;
 
-    bfd_init();
-    abfd=bfd_openr(fname, NULL);
+    // store filename
+    actualFilename = fname;
 
+    // open file
+    bfd_init();
+    abfd = bfd_openr(fname, NULL);
     if(abfd == NULL)
         avr_error("Could not open file: %s", fname);
 
+    // check format
     if(bfd_check_format(abfd, bfd_object) == FALSE)
         avr_error("File '%s' isn't a elf object", fname);
 
-    //reading out the symbols
-    {
-        long storage_needed;
-        static asymbol **symbol_table;
-        long number_of_symbols;
-        long i;
+    // reading out the symbols
+    long storage_needed;
+    static asymbol **symbol_table;
+    long number_of_symbols;
+    long i;
 
-        storage_needed = bfd_get_symtab_upper_bound(abfd);
+    storage_needed = bfd_get_symtab_upper_bound(abfd);
+    if(storage_needed < 0)
+        avr_error("internal error: storage_needed < 0");
+    if(storage_needed == 0)
+        return;
 
-        if(storage_needed < 0)
-            avr_error("internal error: storage_needed < 0");
+    symbol_table = (asymbol **)malloc(storage_needed);
 
-        if(storage_needed == 0)
-            return;
+    number_of_symbols = bfd_canonicalize_symtab(abfd, symbol_table);
+    if(number_of_symbols < 0)
+        avr_error("internal error: number_of_symbols < 0");
 
-        symbol_table = (asymbol **)malloc(storage_needed);
+    // over all symbols ...
+    for(i = 0; i < number_of_symbols; i++) {
+        // if no section data, skip
+        if(!symbol_table[i]->section)
+            continue;
 
-        number_of_symbols = bfd_canonicalize_symtab(abfd, symbol_table);
+        unsigned int lma = symbol_table[i]->section->lma;
+        unsigned int vma = symbol_table[i]->section->vma;
 
-        if(number_of_symbols < 0)
-            avr_error("internal error: number_of_symbols < 0");
+        if(vma < 0x800000) { //range of flash space
+            pair<unsigned int, string> p((symbol_table[i]->value+lma) >> 1, symbol_table[i]->name);
+            Flash->AddSymbol(p);
+        } else if(vma < 0x810000) { //range of ram
+            unsigned int offset = vma - 0x800000;
+            pair<unsigned int, string> p(symbol_table[i]->value + offset, symbol_table[i]->name);
+            data->AddSymbol(p);  // not a real data container, only holding symbols!
 
-        for(i = 0; i < number_of_symbols; i++) {
-            // WAR: if no section data, skip
-            if(!symbol_table[i]->section)
-                continue;
-            unsigned int lma = symbol_table[i]->section->lma;
-            unsigned int vma = symbol_table[i]->section->vma;
-
-            if(vma < 0x7fffff) { //range of flash space
-                pair<unsigned int, string> p((symbol_table[i]->value+lma) >> 1, symbol_table[i]->name);
-                //symbols.insert(p);
-                Flash->AddSymbol(p);
-            }
-            else if(vma < 0x80ffff) { //range of ram 
-                unsigned int offset = vma - 0x800000;
-                //if( symbol_table[i]->flags & BSF_OBJECT) {
-                {
-                    pair<unsigned int, string> p(symbol_table[i]->value + offset, symbol_table[i]->name);
-                    //symbolsData.insert(p);
-                    data->AddSymbol(p);  //not a real data container, only holding symbols!
-
-                    pair<unsigned int, string> pp(symbol_table[i]->value + lma, symbol_table[i]->name);
-                    //symbols.insert(pp);
-                    Flash->AddSymbol(pp);
-                }
-            }
-            else if(vma < 0x81ffff) { //range of eeprom
-                unsigned int offset = vma - 0x810000;
-                pair<unsigned int, string> p(symbol_table[i]->value + offset, symbol_table[i]->name);
-                //symbolsEeprom.insert(p);
-                eeprom->AddSymbol(p);
-            }
-            else
-                avr_warning("Unknown symbol address range found!");
-        }
+            pair<unsigned int, string> pp(symbol_table[i]->value + lma, symbol_table[i]->name);
+            Flash->AddSymbol(pp);
+        } else if(vma < 0x820000) { // range of eeprom
+            unsigned int offset = vma - 0x810000;
+            pair<unsigned int, string> p(symbol_table[i]->value + offset, symbol_table[i]->name);
+            eeprom->AddSymbol(p);
+        } else if(vma < 0x820400) {
+            /* fuses space starting from 0x820000, do nothing */;
+        } else if(vma >= 0x830000 && vma < 0x830400) {
+            /* lock bits starting from 0x830000, do nothing */;
+        } else if(vma >= 0x840000 && vma < 0x840400) {
+            /* signature space starting from 0x840000, do nothing */;
+        } else
+            avr_warning("Unknown symbol address range found! (symbol='%s', address=0x%x)", symbol_table[i]->name, vma);
     }
 
+    // load program, data and - if available - eeprom, fuses and signature
     sec = abfd->sections;
-
-    while(sec != 0)  { 
-        if(sec->flags & SEC_LOAD && sec->vma < 0x80ffff) { //only read flash bytes and data
+    while(sec != 0) {
+        // only loadable sections
+        if(sec->flags & SEC_LOAD) {
             int size;
             size = sec->size;
+
             unsigned char *tmp = (unsigned char *)malloc(size);
+
             bfd_get_section_contents(abfd, sec, tmp, 0, size);
-            Flash->WriteMem(tmp, sec->lma, size);
+
+            if(sec->vma < 0x810000) {
+                // read program, space below 0x810000
+                Flash->WriteMem(tmp, sec->lma, size);
+            } else if(sec->vma >= 0x810000 && sec->vma < 0x820000) {
+                // read eeprom content, if available, space from 0x810000 to 0x820000
+                unsigned int offset = sec->vma - 0x810000;
+                eeprom->WriteMem(tmp, offset, size);
+            } else if(sec->vma >= 0x820000 && sec->vma < 0x820400) {
+                // read fuses, if available, space from 0x820000 to 0x820400
+                /* do nothing */;
+            } else if(sec->vma >= 0x830000 && sec->vma < 0x830400) {
+                // read lock bits, if available, space from 0x830000 to 0x830400
+                /* do nothing */;
+            } else if(sec->vma >= 0x840000 && sec->vma < 0x840400) {
+                // read and check signature, if available, space from 0x840000 to 0x840400
+                if(size != 3) {
+                    free(tmp); // free memory before abort program
+                    avr_error("wrong device signature size in elf file, expected=3, given=%d", size);
+                } else {
+                    unsigned int sig = (((tmp[2] << 8) + tmp[1]) << 8) + tmp[0];
+                    if(devSignature != 0 && sig != devSignature) {
+                        free(tmp); // free memory before abort program
+                        avr_error("wrong device signature, expected=0x%x, given=0x%x", devSignature, sig);
+                    }
+                }
+            }
+
+            // free allocated space
             free(tmp);
         }
 
-        if(sec->flags & SEC_LOAD && sec->vma >= 0x810000) {
-            int size;
-            size = sec->size;
-            unsigned char *tmp = (unsigned char *)malloc(size);
-            bfd_get_section_contents(abfd, sec, tmp, 0, size);
-            unsigned int offset = sec->vma - 0x810000;
-            eeprom->WriteMem(tmp, offset, size);
-            free(tmp);
-        }
         sec = sec->next;
     }
 
@@ -223,7 +241,8 @@ private:
 AvrDevice::AvrDevice(unsigned int _ioSpaceSize,
                      unsigned int IRamSize,
                      unsigned int ERamSize,
-                     unsigned int flashSize):
+                     unsigned int flashSize,
+                     unsigned int sigVal):
     TraceValueRegister(),
     coreTraceGroup(this),
     abortOnInvalidAccess(false),
@@ -232,6 +251,7 @@ AvrDevice::AvrDevice(unsigned int _ioSpaceSize,
     iRamSize(IRamSize),
     eRamSize(ERamSize),
     ioSpaceSize(_ioSpaceSize),
+    devSignature(sigVal),
     flagIWInstructions(true),
     flagJMPInstructions(true),
     flagIJMPInstructions(true),
