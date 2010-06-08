@@ -77,6 +77,11 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         unsigned int actualIrqVector;
         int noDirectIrqJump;
         
+        unsigned char lockBits; //!< stores the lock bits
+        int lockBitsSize;       //!< how much lock bits are available
+        unsigned long fuseBits; //!< store fuses
+        int fuseBitsSize;       //!< how much fuse bits are available (determines number of fuse bytes)
+
     public:
         Breakpoints BP;
         Exitpoints EP;
@@ -204,6 +209,16 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         unsigned GetRegY(void);
         //! Get value of Z register (16bit)
         unsigned GetRegZ(void);
+        //! Initialize lock bits from elf, checks proper size
+        virtual bool LoadLockBits(const unsigned char *buffer, int size);
+        //! Set lock bits (from a SPM instruction)
+        virtual void SetLockBits(unsigned char bits);
+        //! Get lock bits (for LPM instruction)
+        unsigned char GetLockBits(void) { return lockBits; }
+        //! Initialize fuses from elf, checks proper size
+        virtual bool LoadFuses(const unsigned char *buffer, int size);
+        //! Get fuse byte by index
+        unsigned char GetFuseByte(int index) { return (fuseBits >> (index * 8)) && 0xff; }
 };
 
 #endif

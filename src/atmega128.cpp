@@ -80,6 +80,9 @@ AvrDevice_atmega128::AvrDevice_atmega128():
     aref()
 {
     flagELPMInstructions = true;
+    fuseBits = 0xfffd99e1; // uu01 1001 1001 1110 0001
+    fuseBitsSize = 18;
+    lockBitsSize = 6;
     irqSystem = new HWIrqSystem(this, 4, 35); //4 bytes per vector, 35 vectors
     eeprom = new HWEeprom( this, irqSystem, 4096, 22); 
     stack = new HWStackSram(this, 16);
@@ -310,3 +313,10 @@ AvrDevice_atmega128::AvrDevice_atmega128():
     Reset();
 }
 
+void AvrDevice_atmega128::SetLockBits(unsigned char bits) {
+	// bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
+	// can't set bit 1:0
+	lockBits = (lockBits & (bits | 0x3)) | ~((1 << lockBitsSize) - 1);
+}
+
+/* EOF */

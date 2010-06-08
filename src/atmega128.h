@@ -79,6 +79,7 @@ class AvrDevice_atmega128: public AvrDevice {
 
         AvrDevice_atmega128();
         ~AvrDevice_atmega128(); 
+        virtual void SetLockBits(unsigned char bits);
 };
 
 #endif

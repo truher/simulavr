@@ -82,6 +82,9 @@ AvrDevice_atmega16_32::AvrDevice_atmega16_32(unsigned ram_bytes,
               signature),   // Signature
     aref()
 {
+    fuseBits = 0xffff99e1; // 1001 1001 1110 0001
+    fuseBitsSize = 16;
+    lockBitsSize = 6;
     irqSystem = new HWIrqSystem(this, 4, 21); //4 bytes per vector, 21 vectors
     eeprom = new HWEeprom(this, irqSystem, ee_bytes, 15);
     if(stack11bit)
@@ -231,6 +234,12 @@ AvrDevice_atmega16_32::AvrDevice_atmega16_32(unsigned ram_bytes,
     //rw[0x20] TWBR
     
     Reset();
+}
+
+void AvrDevice_atmega16_32::SetLockBits(unsigned char bits) {
+	// bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
+	// can't set bit 1:0
+	lockBits = (lockBits & (bits | 0x3)) | ~((1 << lockBitsSize) - 1);
 }
 
 /* EOF */

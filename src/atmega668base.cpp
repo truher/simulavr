@@ -65,7 +65,8 @@ AvrDevice_atmega668base::~AvrDevice_atmega668base() {
 AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
                                                  unsigned flash_bytes,
                                                  unsigned ee_bytes,
-                                                 unsigned signature):
+                                                 unsigned signature,
+                                                 Dev688type devtype):
     AvrDevice(224,          // I/O space above General Purpose Registers
               ram_bytes,    // RAM size
               0,            // External RAM size
@@ -92,6 +93,14 @@ AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
           &adc7)
 { 
     flagJMPInstructions = (flash_bytes > 8U * 1024U) ? true : false;
+    if(devtype == DEV688_48) {
+        fuseBits = 0xffffdfd9; // uuu1 1101 1111 1101 1001
+        fuseBitsSize = 17;
+    } else {
+        fuseBits = 0xfff9dfd9; // u001 1101 1111 1101 1001
+        fuseBitsSize = 19;
+    }
+    lockBitsSize = 6;
     irqSystem = new HWIrqSystem(this, (flash_bytes > 8U * 1024U) ? 4 : 2, 26);
     
     eeprom = new HWEeprom(this, irqSystem, ee_bytes, 23, HWEeprom::DEVMODE_EXTENDED); 

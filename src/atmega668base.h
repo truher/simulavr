@@ -74,13 +74,22 @@ class AvrDevice_atmega668base: public AvrDevice {
         HWTimer8_2C*        timer2;      //!< timer 2 unit
         
     public:
-        
+        //! enumerates the available devices for this base class
+		enum Dev688type {
+			DEV688_48 = 0,
+			DEV688_88,
+			DEV688_168,
+			DEV688_328
+		};
+
         /*! Creates the device for ATMega48/88/168/328
           @param ram_bytes how much SRAM does the device own
           @param flash_bytes how much flash memory does the device own
-          @param ee_bytes how much EEPROM space does the device own */
+          @param ee_bytes how much EEPROM space does the device own
+          @param signature device signature,
+          @param devtype selector, which device has to be created (influences fuses) */
         AvrDevice_atmega668base(unsigned ram_bytes, unsigned flash_bytes,
-                                unsigned ee_bytes, unsigned signature);
+                                unsigned ee_bytes, unsigned signature, Dev688type devtype);
         
         ~AvrDevice_atmega668base();
         
@@ -90,28 +99,44 @@ class AvrDevice_atmega668base: public AvrDevice {
 class AvrDevice_atmega328: public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega328, see AvrDevice_atmega668base.
-        AvrDevice_atmega328() : AvrDevice_atmega668base(2 * 1024, 32 * 1024, 1024, 0x1e950f) {}
+        AvrDevice_atmega328() : AvrDevice_atmega668base(2 * 1024,
+        		                                        32 * 1024,
+        		                                        1024,
+        		                                        0x1e950f,
+        		                                        AvrDevice_atmega668base::DEV688_328) {}
 };
 
 //! AVR device class for ATMega168, see AvrDevice_atmega668base.
 class AvrDevice_atmega168: public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega168, see AvrDevice_atmega668base.
-        AvrDevice_atmega168() : AvrDevice_atmega668base(1024, 16 * 1024, 512, 0x1e9406) {}
+        AvrDevice_atmega168() : AvrDevice_atmega668base(1024,
+        		                                        16 * 1024,
+        		                                        512,
+        		                                        0x1e9406,
+        		                                        AvrDevice_atmega668base::DEV688_168) {}
 };
 
 //! AVR device class for ATMega88, see AvrDevice_atmega668base.
 class AvrDevice_atmega88:public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega88, see AvrDevice_atmega668base.
-        AvrDevice_atmega88() : AvrDevice_atmega668base(1024, 8 * 1024, 512, 0x1e930a) {}
+        AvrDevice_atmega88() : AvrDevice_atmega668base(1024,
+        		                                       8 * 1024,
+        		                                       512,
+        		                                       0x1e930a,
+        		                                       AvrDevice_atmega668base::DEV688_88) {}
 };
 
 //! AVR device class for ATMega48, see AvrDevice_atmega668base.
 class AvrDevice_atmega48:public AvrDevice_atmega668base {
     public:
         //! Creates the device for ATMega48, see AvrDevice_atmega668base.
-        AvrDevice_atmega48() : AvrDevice_atmega668base(512, 4 * 1024, 256, 0x1e9205) {}
+        AvrDevice_atmega48() : AvrDevice_atmega668base(512,
+        		                                       4 * 1024,
+        		                                       256,
+        		                                       0x1e9205,
+        		                                       AvrDevice_atmega668base::DEV688_48) {}
 };
 
 #endif

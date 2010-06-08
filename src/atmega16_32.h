@@ -75,6 +75,7 @@ class AvrDevice_atmega16_32: public AvrDevice {
                               unsigned nrww_start,
                               bool stack11bit);
         ~AvrDevice_atmega16_32(); 
+        virtual void SetLockBits(unsigned char bits);
 };
 
 //! AVR device class for ATMega16, see AvrDevice_atmega16_32.
