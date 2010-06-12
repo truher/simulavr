@@ -2,7 +2,7 @@
  ****************************************************************************
  *
  * simulavr - A simulator for the Atmel AVR family of microcontrollers.
- * Copyright (C) 2001, 2002, 2003   Klaus Rudolph		
+ * Copyright (C) 2001, 2002, 2003   Klaus Rudolph       
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "systemclock.h"
 #include "avrmalloc.h"
 #include "flash.h"
+#include "hweeprom.h"
 
 //#include <iostream>
 //using namespace std;
@@ -96,7 +97,7 @@ unsigned int FlashProgramming::CpuCycle() {
     }
     // process CPU lock
     if(action == SPM_ACTION_LOCKCPU) {
-        if(SystemClock::Instance().GetCurrentTime() < timeout)
+        if(!core->eeprom->WriteActive() && SystemClock::Instance().GetCurrentTime() < timeout)
             return 1;
         ClearOperationBits();
     }
@@ -148,33 +149,43 @@ int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned
             return 2; // is this right, 3 cpu clocks for this operation?
         }
         if(spm_opr == SPM_OPS_WRITEBUFFER) {
-            // calculate page address
-            addr &= ~((pageSize * 2) - 1);
-            // store temp buffer to flash
-            core->Flash->WriteMem(tempBuffer, addr, pageSize * 2);
-            // calculate system time, where operation is finished
-            timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
-            // lock cpu while writing flash
-            action = SPM_ACTION_LOCKCPU;
-            // lock RWW, if necessary
-            SetRWWLock(addr);
-            //cout << "write buffer: [0x" << hex << addr << "]" << endl;
+            if(core->eeprom->WriteActive()) {
+                avr_warning("eeprom write operation active, prevent spm write action");
+                ClearOperationBits();
+            } else {
+                // calculate page address
+                addr &= ~((pageSize * 2) - 1);
+                // store temp buffer to flash
+                core->Flash->WriteMem(tempBuffer, addr, pageSize * 2);
+                // calculate system time, where operation is finished
+                timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
+                // lock cpu while writing flash
+                action = SPM_ACTION_LOCKCPU;
+                // lock RWW, if necessary
+                SetRWWLock(addr);
+                //cout << "write buffer: [0x" << hex << addr << "]" << endl;
+            }
             return 0; // cpu clocks will be extended by CpuCycle calls
         }
         if(spm_opr == SPM_OPS_ERASE) {
-            // calculate page address
-            addr &= ~((pageSize * 2) - 1);
-            // erase temp. buffer and store to flash
-            for(int i = 0; i < (pageSize * 2); i++)
-                tempBuffer[i] = 0xff;
-            core->Flash->WriteMem(tempBuffer, addr, pageSize * 2);
-            // calculate system time, where operation is finished
-            timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
-            // lock cpu while erasing flash
-            action = SPM_ACTION_LOCKCPU;
-            // lock RWW, if necessary
-            SetRWWLock(addr);
-            //cout << "erase page: [0x" << hex << addr << "]" << endl;
+            if(core->eeprom->WriteActive()) {
+                avr_warning("eeprom write operation active, prevent spm erase action");
+                ClearOperationBits();
+            } else {
+                // calculate page address
+                addr &= ~((pageSize * 2) - 1);
+                // erase temp. buffer and store to flash
+                for(int i = 0; i < (pageSize * 2); i++)
+                    tempBuffer[i] = 0xff;
+                core->Flash->WriteMem(tempBuffer, addr, pageSize * 2);
+                // calculate system time, where operation is finished
+                timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
+                // lock cpu while erasing flash
+                action = SPM_ACTION_LOCKCPU;
+                // lock RWW, if necessary
+                SetRWWLock(addr);
+                //cout << "erase page: [0x" << hex << addr << "]" << endl;
+            }
             return 0; // cpu clocks will be extended by CpuCycle calls
         }
         //cout << "unhandled spm-action(0x" << hex << data << ",0x" << hex << addr << ")" << endl;

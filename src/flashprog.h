@@ -89,6 +89,7 @@ class FlashProgramming: public Hardware {
         
         unsigned char LPM_action(unsigned int xaddr, unsigned int addr);
         int SPM_action(unsigned int data, unsigned int xaddr, unsigned int addr);
+        bool WriteActive(void) { action == SPM_ACTION_LOCKCPU; }
         void SetSpmcr(unsigned char v);
         unsigned char GetSpmcr() { return spmcr_val; }
 

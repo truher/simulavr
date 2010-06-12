@@ -85,6 +85,7 @@ class HWEeprom: public Hardware, public Memory, public TraceValueRegister {
         void WriteMem(unsigned char *, unsigned int offset, unsigned int size);
         void WriteAtAddress(unsigned int, unsigned char);
         unsigned char ReadFromAddress(unsigned int);
+        bool WriteActive(void) { return opState == OPSTATE_WRITE; }
 
         void SetEearl(unsigned char);
         void SetEearh(unsigned char);

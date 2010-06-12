@@ -182,6 +182,8 @@ void HWEeprom::SetEecr(unsigned char newval) {
                         break;
                 }
                 writeDoneTime = SystemClock::Instance().GetCurrentTime() + t;
+                if(core->spmRegister != NULL && core->spmRegister->WriteActive())
+                    avr_warning("eeprom write operation while spm write operation, this aborts spm write operation");
                 if(core->trace_on == 1)
                     traceOut << " EEPROM: Write start";
             }
