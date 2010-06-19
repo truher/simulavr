@@ -218,7 +218,7 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         //! Initialize fuses from elf, checks proper size
         virtual bool LoadFuses(const unsigned char *buffer, int size);
         //! Get fuse byte by index
-        unsigned char GetFuseByte(int index) { return (fuseBits >> (index * 8)) && 0xff; }
+        unsigned char GetFuseByte(int index) { return (fuseBits >> (index * 8)) & 0xff; }
 };
 
 #endif

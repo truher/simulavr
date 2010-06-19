@@ -87,7 +87,7 @@ class FlashProgramming: public Hardware {
         unsigned int CpuCycle();
         void Reset();
         
-        unsigned char LPM_action(unsigned int xaddr, unsigned int addr);
+        int LPM_action(unsigned int reg, unsigned int xaddr);
         int SPM_action(unsigned int data, unsigned int xaddr, unsigned int addr);
         bool WriteActive(void) { action == SPM_ACTION_LOCKCPU; }
         void SetSpmcr(unsigned char v);

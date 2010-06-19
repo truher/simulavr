@@ -112,8 +112,44 @@ void FlashProgramming::Reset() {
     timeout = 0;
 }
 
-unsigned char FlashProgramming::LPM_action(unsigned int xaddr, unsigned int addr) {
-    return 0;
+int FlashProgramming::LPM_action(unsigned int reg, unsigned int xaddr) {
+    //cout << " [lpm op R" << dec << (int)reg << " <= (0x" << hex << xaddr << ") / " << spm_opr << "] ";
+
+    if(spm_opr == SPM_OPS_LOCKBITS) {
+        // check address
+        if(xaddr == 0x1)
+            // read lock bits to register
+            core->SetCoreReg(reg, core->GetLockBits());
+        else if(xaddr == 0x0)
+            // read fuse low byte to register
+            core->SetCoreReg(reg, core->GetFuseByte(0));
+        else if(xaddr == 0x3)
+            // read fuse high byte to register
+            core->SetCoreReg(reg, core->GetFuseByte(1));
+        else if(xaddr == 0x2)
+            // read fuse extended byte to register
+            core->SetCoreReg(reg, core->GetFuseByte(2));
+        else
+            avr_warning("wrong address on read lock/fuses operation: 0x%x", xaddr);
+    } else if(spm_opr == SPM_OPS_READSIG) {
+        // check address and read signature / oscal values to register
+        if(xaddr == 0x0)
+            core->SetCoreReg(reg, (core->GetDeviceSignature() >> 16) & 0xff);
+        else if(xaddr == 0x2)
+            core->SetCoreReg(reg, (core->GetDeviceSignature() >> 8) & 0xff);
+        else if(xaddr == 0x4)
+            core->SetCoreReg(reg, core->GetDeviceSignature() & 0xff);
+        else {
+            // FIXME: reading oscal values, differ on devices
+            avr_warning("invalid address while read signature: 0x%x", xaddr);
+            core->SetCoreReg(reg, 0);
+        }
+    } else
+        // read value from address and store it to register
+        core->SetCoreReg(reg, core->Flash->ReadMem(xaddr ^ 0x1));
+
+    // return necessary cycles
+    return 3;
 }
 
 int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned int addr) {
@@ -188,6 +224,23 @@ int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned
             }
             return 0; // cpu clocks will be extended by CpuCycle calls
         }
+        if(spm_opr == SPM_OPS_LOCKBITS) {
+            if(core->eeprom->WriteActive()) {
+                avr_warning("eeprom write operation active, prevent spm lock bits action");
+                ClearOperationBits();
+            } else {
+            	// set lock bits from R0, address isn't used, but recommended to set to 0x1
+            	if(addr != 0x1)
+            		avr_warning("recommended address for lock bit operation is 0x1, not 0x%x", addr);
+            	core->SetLockBits(core->GetCoreReg(0));
+                // calculate system time, where operation is finished
+                timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
+                // lock cpu while erasing flash
+                action = SPM_ACTION_LOCKCPU;
+                //cout << "set lock bits: 0x" << hex << 0 << endl;
+            }
+            return 0; // cpu clocks will be extended by CpuCycle calls
+        }
         //cout << "unhandled spm-action(0x" << hex << data << ",0x" << hex << addr << ")" << endl;
         ClearOperationBits();
     }
@@ -226,6 +279,7 @@ void FlashProgramming::SetSpmcr(unsigned char v) {
                 break;
                 
             case 0x21:
+                // FIXME: readsig isn't available on some devices
                 spm_opr = SPM_OPS_READSIG;
                 break;
                 
