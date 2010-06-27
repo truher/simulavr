@@ -1,0 +1,18 @@
+# template makefile for test lpm operation with lock bits, fuses and signature
+
+SIMULAVR=../../src/simulavr$(EXEEXT)
+
+test: %(targets)s
+
+%(rules)s
+
+%%.report: %%.elf $(SIMULAVR)
+	@./run_test.sh $@ $($(basename $(notdir $@))_SHELLOPTS) $< -- $(SIMULAVR) $($(basename $(notdir $@))_SIMOPTS) -f $<
+
+define compile-and-link
+$(AVR_GCC) $($(basename $(notdir $@))_CCOPTS) -o $@ $^
+endef
+
+include Makefile
+
+# EOF
