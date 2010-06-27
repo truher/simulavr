@@ -63,6 +63,7 @@ AvrDevice_atmega128::~AvrDevice_atmega128() {
     delete ad;
     delete admux;
     delete rampz;
+    delete spmRegister;
     delete portg;
     delete portf;
     delete porte;
@@ -93,6 +94,8 @@ AvrDevice_atmega128::AvrDevice_atmega128():
     porte = new HWPort(this, "E");
     portf = new HWPort(this, "F");
     portg = new HWPort(this, "G");
+
+    spmRegister = new FlashProgramming(this, 128, 0xf000, FlashProgramming::SPM_MEGA_MODE);
 
     RegisterPin("AREF", &aref);
     rampz = new AddressExtensionRegister(this, "RAMPZ", 1);
@@ -228,6 +231,8 @@ AvrDevice_atmega128::AvrDevice_atmega128():
     
     rw[0x6a]= eicra_reg;
     
+    rw[0x68]= & spmRegister->spmcr_reg;
+
     rw[0x65]= & portg->port_reg;
     rw[0x64]= & portg->ddr_reg;
     rw[0x63]= & portg->pin_reg;

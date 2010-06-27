@@ -57,6 +57,7 @@ AvrDevice_atmega668base::~AvrDevice_atmega668base() {
     delete eifr_reg;
     delete eimsk_reg;
     delete eicra_reg;
+    delete spmRegister;
     delete stack;
     delete eeprom;
     delete irqSystem;
@@ -105,6 +106,23 @@ AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
     
     eeprom = new HWEeprom(this, irqSystem, ee_bytes, 23, HWEeprom::DEVMODE_EXTENDED); 
     stack = new HWStackSram(this, 16);
+
+    unsigned int pgsize;
+    unsigned int nrwwstart;
+    if(devtype == DEV688_48) {
+        pgsize = 32;
+        nrwwstart = 0; // no RWW area available
+    } else if(devtype == DEV688_88) {
+        pgsize = 32;
+        nrwwstart = 0xc00;
+    } else if(devtype == DEV688_168) {
+        pgsize = 64;
+        nrwwstart = 0x1c00;
+    } else if(devtype == DEV688_328) {
+        pgsize = 64;
+        nrwwstart = 0x3800;
+    }
+    spmRegister = new FlashProgramming(this, pgsize, nrwwstart, FlashProgramming::SPM_MEGA_MODE);
 
     RegisterPin("AREF", &aref);
     RegisterPin("ADC6", &adc6);
@@ -246,6 +264,8 @@ AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
     rw[0x5f]= statusRegister;
     rw[0x5e]= & ((HWStackSram *)stack)->sph_reg;
     rw[0x5d]= & ((HWStackSram *)stack)->spl_reg;
+
+    rw[0x57]= & spmRegister->spmcr_reg;
 
     rw[0x4E]= & spi->spdr_reg;
     rw[0x4D]= & spi->spsr_reg;

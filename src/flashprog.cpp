@@ -112,38 +112,52 @@ void FlashProgramming::Reset() {
     timeout = 0;
 }
 
+void FlashProgramming::LPM_fuses_action(unsigned int reg, unsigned int addr) {
+    int byteSize = core->GetFuseByteSize();
+    if(addr == 0x0)
+        // read fuse low byte to register
+        core->SetCoreReg(reg, core->GetFuseByte(0));
+    else if((byteSize > 1) && (addr == 0x3))
+        // read fuse high byte to register
+        core->SetCoreReg(reg, core->GetFuseByte(1));
+    else if((byteSize > 2) && (addr == 0x2))
+        // read fuse extended byte to register
+        core->SetCoreReg(reg, core->GetFuseByte(2));
+    else {
+        avr_warning("wrong address on read lock/fuses operation: 0x%x", addr);
+        core->SetCoreReg(reg, 0);
+    }
+}
+
+void FlashProgramming::LPM_signature_action(unsigned int reg, unsigned int addr) {
+    if(addr == 0x0)
+        core->SetCoreReg(reg, (core->GetDeviceSignature() >> 16) & 0xff);
+    else if(addr == 0x2)
+        core->SetCoreReg(reg, (core->GetDeviceSignature() >> 8) & 0xff);
+    else if(addr == 0x4)
+        core->SetCoreReg(reg, core->GetDeviceSignature() & 0xff);
+    else {
+        // FIXME: reading oscal values, differ on devices
+        avr_warning("invalid address while read signature: 0x%x", addr);
+        core->SetCoreReg(reg, 0);
+    }
+}
+
 int FlashProgramming::LPM_action(unsigned int reg, unsigned int xaddr) {
-    //cout << " [lpm op R" << dec << (int)reg << " <= (0x" << hex << xaddr << ") / " << spm_opr << "] ";
+    //if(spm_opr != 0)
+    //    cout << " [lpm op R" << dec << (int)reg << " <= (0x" << hex << xaddr << ") / " << spm_opr << "] ";
 
     if(spm_opr == SPM_OPS_LOCKBITS) {
         // check address
         if(xaddr == 0x1)
             // read lock bits to register
             core->SetCoreReg(reg, core->GetLockBits());
-        else if(xaddr == 0x0)
-            // read fuse low byte to register
-            core->SetCoreReg(reg, core->GetFuseByte(0));
-        else if(xaddr == 0x3)
-            // read fuse high byte to register
-            core->SetCoreReg(reg, core->GetFuseByte(1));
-        else if(xaddr == 0x2)
-            // read fuse extended byte to register
-            core->SetCoreReg(reg, core->GetFuseByte(2));
         else
-            avr_warning("wrong address on read lock/fuses operation: 0x%x", xaddr);
+            // read fuses to register
+            LPM_fuses_action(reg, xaddr);
     } else if(spm_opr == SPM_OPS_READSIG) {
         // check address and read signature / oscal values to register
-        if(xaddr == 0x0)
-            core->SetCoreReg(reg, (core->GetDeviceSignature() >> 16) & 0xff);
-        else if(xaddr == 0x2)
-            core->SetCoreReg(reg, (core->GetDeviceSignature() >> 8) & 0xff);
-        else if(xaddr == 0x4)
-            core->SetCoreReg(reg, core->GetDeviceSignature() & 0xff);
-        else {
-            // FIXME: reading oscal values, differ on devices
-            avr_warning("invalid address while read signature: 0x%x", xaddr);
-            core->SetCoreReg(reg, 0);
-        }
+        LPM_signature_action(reg, xaddr);
     } else
         // read value from address and store it to register
         core->SetCoreReg(reg, core->Flash->ReadMem(xaddr ^ 0x1));
@@ -279,7 +293,6 @@ void FlashProgramming::SetSpmcr(unsigned char v) {
                 break;
                 
             case 0x21:
-                // FIXME: readsig isn't available on some devices
                 spm_opr = SPM_OPS_READSIG;
                 break;
                 

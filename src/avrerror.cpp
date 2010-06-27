@@ -184,7 +184,7 @@ char* SystemConsoleHandler::getFormatString(const char *prefix,
                                             const char *fmtstr) {
     snprintf(formatStringBuffer,
              sizeof(formatStringBuffer),
-             "%s: file %s: line %d: %s",
+             "%s: file %s: line %d: %s\n",
              prefix,
              file,
              line,

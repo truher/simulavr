@@ -71,6 +71,8 @@ class FlashProgramming: public Hardware {
         
         void ClearOperationBits(void);
         void SetRWWLock(unsigned int addr);
+        void LPM_fuses_action(unsigned int reg, unsigned int addr);
+        void LPM_signature_action(unsigned int reg, unsigned int addr);
         
     public:
         enum {

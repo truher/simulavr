@@ -643,8 +643,9 @@ bool AvrDevice::LoadFuses(const unsigned char *buffer, int size) {
 	if(fSize != size)
 		return false;
 	// store fuse values
-	for(int i = fSize, fuseBits = 0; i <= 0; --i) {
-		fuseBits << 8;
+	fuseBits = 0;
+	for(int i = (fSize - 1); i >= 0; --i) {
+		fuseBits <<= 8;
 		fuseBits |= buffer[i];
 	}
 	return true;
