@@ -34,16 +34,16 @@ void debug_puts_prog(const PGM_P strp) {
 void debug_nibble(unsigned long val) {
   val &= 0xf;
   if(val <= 9) {
-	  special_output_port = '0' + val;
+      special_output_port = '0' + val;
   } else {
-	  special_output_port = 'a' + (val - 10);
+      special_output_port = 'a' + (val - 10);
   }
 }
 
 void debug_dec(unsigned long val, unsigned int num) {
-	for(; num > 0; --num) {
-	    debug_nibble(val >> ((num - 1) * 4));
-	}
+    for(; num > 0; --num) {
+        debug_nibble(val >> ((num - 1) * 4));
+    }
 }
 
 #ifdef SPMCSR

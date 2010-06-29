@@ -930,11 +930,11 @@ int  avr_op_LPM_Z::operator()() {
     word Z = core->GetRegZ();
 
     if(core->spmRegister != NULL)
-    	return core->spmRegister->LPM_action(Rd, Z);
+        return core->spmRegister->LPM_action(Rd, Z);
     else {
-   	    core->SetCoreReg(Rd, core->Flash->ReadMem(Z ^ 0x0001));
-   	    return 3;
-   	}
+        core->SetCoreReg(Rd, core->Flash->ReadMem(Z ^ 0x0001));
+        return 3;
+    }
 }
 
 avr_op_LPM::avr_op_LPM(word opcode, AvrDevice *c):
@@ -945,11 +945,11 @@ int avr_op_LPM::operator()() {
     word Z = core->GetRegZ();
     
     if(core->spmRegister != NULL)
-    	return core->spmRegister->LPM_action(0, Z);
-   	else {
-   	    core->SetCoreReg(0, core->Flash->ReadMem(Z ^ 0x0001));
-   	    return 3;
-   	}
+        return core->spmRegister->LPM_action(0, Z);
+    else {
+        core->SetCoreReg(0, core->Flash->ReadMem(Z ^ 0x0001));
+        return 3;
+    }
 }
 
 avr_op_LPM_Z_incr::avr_op_LPM_Z_incr(word opcode, AvrDevice *c):
@@ -962,9 +962,9 @@ int avr_op_LPM_Z_incr::operator()() {
     int cycles = 3;
 
     if(core->spmRegister != NULL)
-    	cycles = core->spmRegister->LPM_action(Rd, Z);
+        cycles = core->spmRegister->LPM_action(Rd, Z);
     else
-   	    core->SetCoreReg(Rd, core->Flash->ReadMem(Z ^ 0x0001));
+        core->SetCoreReg(Rd, core->Flash->ReadMem(Z ^ 0x0001));
 
     /* post increment */
     Z++;

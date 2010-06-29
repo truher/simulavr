@@ -243,10 +243,10 @@ int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned
                 avr_warning("eeprom write operation active, prevent spm lock bits action");
                 ClearOperationBits();
             } else {
-            	// set lock bits from R0, address isn't used, but recommended to set to 0x1
-            	if(addr != 0x1)
-            		avr_warning("recommended address for lock bit operation is 0x1, not 0x%x", addr);
-            	core->SetLockBits(core->GetCoreReg(0));
+                // set lock bits from R0, address isn't used, but recommended to set to 0x1
+                if(addr != 0x1)
+                    avr_warning("recommended address for lock bit operation is 0x1, not 0x%x", addr);
+                core->SetLockBits(core->GetCoreReg(0));
                 // calculate system time, where operation is finished
                 timeout = SystemClock::Instance().GetCurrentTime() + FlashProgramming::SPM_TIMEOUT;
                 // lock cpu while erasing flash

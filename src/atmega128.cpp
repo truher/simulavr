@@ -319,9 +319,9 @@ AvrDevice_atmega128::AvrDevice_atmega128():
 }
 
 void AvrDevice_atmega128::SetLockBits(unsigned char bits) {
-	// bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
-	// can't set bit 1:0
-	lockBits = (lockBits & (bits | 0x3)) | ~((1 << lockBitsSize) - 1);
+    // bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
+    // can't set bit 1:0
+    lockBits = (lockBits & (bits | 0x3)) | ~((1 << lockBitsSize) - 1);
 }
 
 /* EOF */

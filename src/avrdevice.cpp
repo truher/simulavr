@@ -148,13 +148,13 @@ void AvrDevice::Load(const char* fname) {
                 // read fuses, if available, space from 0x820000 to 0x820400
                 if(!LoadFuses(tmp, size)) {
                     free(tmp); // free memory before abort program
-            		avr_error("wrong byte size of fuses");
+                    avr_error("wrong byte size of fuses");
                 }
             } else if(sec->vma >= 0x830000 && sec->vma < 0x830400) {
                 // read lock bits, if available, space from 0x830000 to 0x830400
                 if(!LoadLockBits(tmp, size)) {
                     free(tmp); // free memory before abort program
-            		avr_error("wrong byte size of lock bits");
+                    avr_error("wrong byte size of lock bits");
                 }
             } else if(sec->vma >= 0x840000 && sec->vma < 0x840400) {
                 // read and check signature, if available, space from 0x840000 to 0x840400
@@ -623,32 +623,32 @@ unsigned AvrDevice::GetRegZ(void) {
 }
 
 bool AvrDevice::LoadLockBits(const unsigned char *buffer, int size) {
-	int lBSize = 1; // current not more than 8 bit!
-	// check buffer size
-	if(lBSize != size)
-		return false;
-	// load lock bits
-	lockBits = buffer[0];
-	return true;
+    int lBSize = 1; // current not more than 8 bit!
+    // check buffer size
+    if(lBSize != size)
+        return false;
+    // load lock bits
+    lockBits = buffer[0];
+    return true;
 }
 
 void AvrDevice::SetLockBits(unsigned char bits) {
-	// bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
-	lockBits = (lockBits & bits) | ~((1 << lockBitsSize) - 1);
+    // bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
+    lockBits = (lockBits & bits) | ~((1 << lockBitsSize) - 1);
 }
 
 bool AvrDevice::LoadFuses(const unsigned char *buffer, int size) {
-	int fSize = ((fuseBitsSize - 1) / 8) + 1;
-	// check buffer size
-	if(fSize != size)
-		return false;
-	// store fuse values
-	fuseBits = 0;
-	for(int i = (fSize - 1); i >= 0; --i) {
-		fuseBits <<= 8;
-		fuseBits |= buffer[i];
-	}
-	return true;
+    int fSize = ((fuseBitsSize - 1) / 8) + 1;
+    // check buffer size
+    if(fSize != size)
+        return false;
+    // store fuse values
+    fuseBits = 0;
+    for(int i = (fSize - 1); i >= 0; --i) {
+        fuseBits <<= 8;
+        fuseBits |= buffer[i];
+    }
+    return true;
 }
 
 // EOF
