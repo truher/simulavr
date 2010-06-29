@@ -71,6 +71,22 @@ static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
     });
 }
 
+void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
+    __asm__                               \
+    (                                     \
+        "mov r0, %0" "\n\t"             \
+        "out %2, %1" "\n\t"               \
+        "ldi r30, 1" "\n\t"             \
+        "mov r31, r1" "\n\t"             \
+        "spm" "\n\t"                      \
+        :                 \
+        : "r" (lockbits),                 \
+          "r" (spmcrVal),                 \
+          "I" (_SFR_IO_ADDR(SPMCSR))       \
+        : "r30", "r31"                    \
+    );
+}
+
 #else
 
 static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
@@ -92,6 +108,22 @@ static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
         );                                    \
         __result;                             \
     });
+}
+
+void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
+    __asm__                               \
+    (                                     \
+        "ldi r30, 1" "\n\t"             \
+        "mov r31, r1" "\n\t"             \
+        "sts %2, %1" "\n\t"               \
+        "mov r0, %0" "\n\t"             \
+        "spm" "\n\t"                      \
+        :                 \
+        : "r" (lockbits),                 \
+          "r" (spmcrVal),                 \
+          "M" (_SFR_MEM_ADDR(SPMCSR))       \
+        : "r30", "r31"                    \
+    );                                    \
 }
 
 #endif
@@ -117,6 +149,20 @@ static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
         );
         __result;
     });
+}
+
+void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
+    __asm__(
+        "mov r0, %0" "\n\t"
+        "out %2, %1" "\n\t"
+        "ldi r30, 1" "\n\t"
+        "mov r31, r1" "\n\t"
+        "spm" "\n\t"
+        :
+        : "r" (lockbits),
+          "r" (spmcrVal),
+          "I" (_SFR_IO_ADDR(SPMCR))
+        : "r30", "r31");
 }
 
 #endif

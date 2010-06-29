@@ -25,5 +25,6 @@ extern void debug_nibble(unsigned long val);
 extern void debug_dec(unsigned long val, unsigned int num);
 extern int assert_lpm_special(PGM_P comment, uint8_t expected, uint16_t lpmAddr, uint8_t spmcrVal);
 extern int assert_equal(PGM_P comment, unsigned int expected, unsigned int value);
+extern void set_lockbits(uint8_t lockbits, uint8_t spmcrVal);
 
 #endif /* TESTUTIL_H_ */

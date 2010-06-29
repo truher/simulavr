@@ -170,7 +170,7 @@ int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned
   
     // do nothing, if called from RWW section
     unsigned int pc = core->PC;
-    if(pc < nrww_addr)
+    if((pc < nrww_addr) && (spm_opr != SPM_OPS_LOCKBITS))
         return 0; // SPM operation is disabled, if executed from RWW section
       
     // calculate full address (RAMPZ:Z)
