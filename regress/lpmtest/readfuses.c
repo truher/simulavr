@@ -25,15 +25,15 @@ FUSES =
 int main(void) {
   int result = 0;
 
-  if(assert_lpm_special(cmtString1, LFUSE_DEFAULT, 0, 9))
+  if(assert_lpm_special(cmtString1, LFUSE_DEFAULT, GET_LOW_FUSE_BITS))
       result = 1;
 
 #if FUSE_MEMORY_SIZE == 2
-  if(assert_lpm_special(cmtString2, HFUSE_DEFAULT, 3, 9))
+  if(assert_lpm_special(cmtString2, HFUSE_DEFAULT, GET_HIGH_FUSE_BITS))
       result = 1;
 
 #if FUSE_MEMORY_SIZE == 3
-  if(assert_lpm_special(cmtString3, EFUSE_DEFAULT, 2, 9))
+  if(assert_lpm_special(cmtString3, EFUSE_DEFAULT, GET_EXTENDED_FUSE_BITS))
       result = 1;
 #endif
 #endif

@@ -19,7 +19,7 @@ LOCKBITS = LOCKBITS_VALUE;
 int main(void) {
   int result = 0;
 
-  if(assert_lpm_special(cmtString, LOCKBITS_VALUE, 1, 9))
+  if(assert_lpm_special(cmtString, LOCKBITS_VALUE, GET_LOCK_BITS))
       result = 1;
 
   special_exit_port = result;

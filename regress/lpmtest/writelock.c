@@ -21,21 +21,21 @@ int main(void) {
   int result = 0;
 
   /* read unchanged and uninitialized lock bits */
-  if(assert_lpm_special(cmtString1, 0xff, 1, 9))
+  if(assert_lpm_special(cmtString1, 0xff, GET_LOCK_BITS))
       result = 1;
 
   /* change lock bits */
-  set_lockbits(LOCKBITS_VALUE, 9);
+  boot_lock_bits_set(~LOCKBITS_VALUE);
 
   /* read again to check change of lock bits */
-  if(assert_lpm_special(cmtString2, LOCKBITS_VALUE, 1, 9))
+  if(assert_lpm_special(cmtString2, LOCKBITS_VALUE, GET_LOCK_BITS))
       result = 1;
 
   /* try change back lock bits */
-  set_lockbits(0xff, 9);
+  boot_lock_bits_set(~0xff);
 
   /* read again to check change of lock bits */
-  if(assert_lpm_special(cmtString3, LOCKBITS_VALUE, 1, 9))
+  if(assert_lpm_special(cmtString3, LOCKBITS_VALUE, GET_LOCK_BITS))
       result = 1;
 
   special_exit_port = result;

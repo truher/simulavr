@@ -2,8 +2,6 @@
  *  This is a test program to test lpm instruction.
  */
 
-#define _SFR_ASM_COMPAT 1
-
 #include "testutil.h"
 
 /*
@@ -46,132 +44,11 @@ void debug_dec(unsigned long val, unsigned int num) {
     }
 }
 
-#ifdef SPMCSR
-
-#if _SFR_IO_REG_P(SPMCSR)
-
-static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
-     return __extension__({                          \
-        uint16_t __addr16 = (uint16_t)(addr); \
-        uint8_t __spmval = (uint8_t)spmval;   \
-        uint8_t __result;                     \
-        __asm__                               \
-        (                                     \
-            "out %3, %2" "\n\t"               \
-            "movw r30, %1" "\n\t"             \
-            "lpm" "\n\t"                      \
-            "mov %0, r0" "\n\t"               \
-            : "=r" (__result)                 \
-            : "r" (__addr16),                 \
-              "r" (__spmval),                 \
-              "I" (_SFR_IO_ADDR(SPMCSR))       \
-            : "r30", "r31"                    \
-        );                                    \
-        __result;                             \
-    });
-}
-
-void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
-    __asm__                               \
-    (                                     \
-        "mov r0, %0" "\n\t"             \
-        "out %2, %1" "\n\t"               \
-        "ldi r30, 1" "\n\t"             \
-        "mov r31, r1" "\n\t"             \
-        "spm" "\n\t"                      \
-        :                 \
-        : "r" (lockbits),                 \
-          "r" (spmcrVal),                 \
-          "I" (_SFR_IO_ADDR(SPMCSR))       \
-        : "r30", "r31"                    \
-    );
-}
-
-#else
-
-static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
-    return __extension__({                          \
-        uint16_t __addr16 = (uint16_t)(addr); \
-        uint8_t __spmval = (uint8_t)spmval;   \
-        uint8_t __result;                     \
-        __asm__                               \
-        (                                     \
-            "sts %3, %2" "\n\t"             \
-            "movw r30, %1" "\n\t"             \
-            "lpm" "\n\t"                      \
-            "mov %0, r0" "\n\t"               \
-            : "=r" (__result)                 \
-            : "r" (__addr16),                 \
-              "r" (__spmval),                  \
-              "M" (_SFR_MEM_ADDR(SPMCSR))       \
-            : "r30", "r31"                    \
-        );                                    \
-        __result;                             \
-    });
-}
-
-void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
-    __asm__                               \
-    (                                     \
-        "ldi r30, 1" "\n\t"             \
-        "mov r31, r1" "\n\t"             \
-        "sts %2, %1" "\n\t"               \
-        "mov r0, %0" "\n\t"             \
-        "spm" "\n\t"                      \
-        :                 \
-        : "r" (lockbits),                 \
-          "r" (spmcrVal),                 \
-          "M" (_SFR_MEM_ADDR(SPMCSR))       \
-        : "r30", "r31"                    \
-    );                                    \
-}
-
-#endif
-
-#else
-
-static uint8_t _lpm_special(uint16_t addr, uint8_t spmval) {
-    return __extension__({
-        uint16_t __addr16 = (uint16_t)(addr);
-        uint8_t __spmval = (uint8_t)spmval;
-        uint8_t __result;
-        __asm__
-        (
-            "out %3, %2" "\n\t"
-            "movw r30, %1" "\n\t"
-            "lpm" "\n\t"
-            "mov %0, r0" "\n\t"
-            : "=r" (__result)
-            : "r" (__addr16),
-              "r" (__spmval),
-              "I" (_SFR_IO_ADDR(SPMCR))
-            : "r30", "r31"
-        );
-        __result;
-    });
-}
-
-void set_lockbits(uint8_t lockbits, uint8_t spmcrVal) {
-    __asm__(
-        "mov r0, %0" "\n\t"
-        "out %2, %1" "\n\t"
-        "ldi r30, 1" "\n\t"
-        "mov r31, r1" "\n\t"
-        "spm" "\n\t"
-        :
-        : "r" (lockbits),
-          "r" (spmcrVal),
-          "I" (_SFR_IO_ADDR(SPMCR))
-        : "r30", "r31");
-}
-
-#endif
-
 static char _assert_1[] PROGMEM = " ok, value=0x";
 static char _assert_2[] PROGMEM = " failed, expected=0x";
 static char _assert_3[] PROGMEM = ", got=0x";
 
-int assert_lpm_special(PGM_P comment, uint8_t expected, uint16_t lpmAddr, uint8_t spmcrVal) {
+int assert_lpm_special(PGM_P comment, uint8_t expected, uint16_t lpmAddr) {
     uint8_t val;
     uint8_t result = 0;
 
@@ -180,7 +57,7 @@ int assert_lpm_special(PGM_P comment, uint8_t expected, uint16_t lpmAddr, uint8_
     debug_putc(':');
 
     /* get expected value */
-    val = _lpm_special(lpmAddr, spmcrVal);
+    val = boot_lock_fuse_bits_get(lpmAddr);
 
     /* compare and print result */
     if(val == expected) {
