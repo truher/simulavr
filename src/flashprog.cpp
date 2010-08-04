@@ -44,9 +44,9 @@ void FlashProgramming::SetRWWLock(unsigned int addr) {
     if(!isATMega)
         return;
     // set lock, if addr in RWW area
-    if(addr < (nrww_addr * 2)) {
+    if(addr < nrww_addr) {
         spmcr_val |= 0x40;
-        core->Flash->SetRWWLock(nrww_addr * 2);
+        core->Flash->SetRWWLock(nrww_addr);
     }
 }
 
@@ -169,10 +169,10 @@ int FlashProgramming::LPM_action(unsigned int reg, unsigned int xaddr) {
 int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned int addr) {
   
     // do nothing, if called from RWW section
-    unsigned int pc = core->PC;
+    unsigned int pc = core->PC * 2;
     if((pc < nrww_addr) && (spm_opr != SPM_OPS_LOCKBITS))
         return 0; // SPM operation is disabled, if executed from RWW section
-      
+
     // calculate full address (RAMPZ:Z)
     addr = (addr & 0xffff) + (xaddr << 16);
     
