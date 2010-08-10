@@ -97,7 +97,7 @@ pkginclude_HEADERS = \
   hwport.h hwspi.h hwsreg.h hwstack.h hwuart.h hwwado.h ioregs.h irqsystem.h \
   memory.h net.h pin.h pinatport.h pinnotify.h pinmon.h printable.h rwmem.h \
   simulationmember.h spisrc.h spisink.h specialmem.h systemclock.h \
-  systemclocktypes.h traceval.h types.h
+  systemclocktypes.h traceval.h types.h python/pysimulationmember.h
 
 nodist_pkginclude_HEADERS =  $(FAB_HEADER)
 

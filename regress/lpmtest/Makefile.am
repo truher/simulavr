@@ -3,7 +3,7 @@
 #
 
 EXTRA_DIST = lpmtest.cfg lpmtest.template run_test.sh testutil.h \
-    testutil.c simple.c
+    testutil.c simple.c readfuses.c readlock.c writelock.c
 
 export PYTHONPATH=$(srcdir)/../modules
 
