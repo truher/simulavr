@@ -1,0 +1,6 @@
+*.elf
+*.report
+*.output
+spmtest.makefile
+page_pattern.h
+

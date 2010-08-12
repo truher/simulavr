@@ -6,7 +6,7 @@ MAINTAINERCLEANFILES = Makefile.in stamp-vti
 
 EXTRA_DIST           = README regress.py.in
 
-SUBDIRS              = modules test_opcodes avrtest timertest extinttest lpmtest
+SUBDIRS              = modules test_opcodes avrtest timertest extinttest lpmtest spmtest
 
 all:
 

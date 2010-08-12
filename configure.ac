@@ -145,9 +145,9 @@ AC_CONFIG_FILES([
   Makefile src/Makefile src/hwtimer/Makefile src/cmd/Makefile src/ui/Makefile
   src/setup.py doc/Makefile doc/conf.py doc/web/Makefile doc/web/conf.py doc/config.texi
   regress/Makefile regress/modules/Makefile regress/test_opcodes/Makefile regress/lpmtest/Makefile
-  regress/avrtest/Makefile regress/timertest/Makefile regress/extinttest/Makefile
-  examples/verilog/Makefile examples/Makefile examples/anacomp/Makefile
-  examples/atmega48/Makefile examples/atmega128_timer/Makefile
+  regress/spmtest/Makefile regress/avrtest/Makefile regress/timertest/Makefile
+  regress/extinttest/Makefile examples/verilog/Makefile examples/Makefile
+  examples/anacomp/Makefile examples/atmega48/Makefile examples/atmega128_timer/Makefile
   examples/atmel_key/Makefile examples/feedback/Makefile examples/simple_ex1/Makefile
   examples/spi/Makefile examples/stdiodemo/Makefile examples/python/Makefile
 ])
