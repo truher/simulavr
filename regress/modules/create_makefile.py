@@ -78,15 +78,29 @@ def time2ns(timestr):
   return str(n * f)
   
 def create_rules(config):
+  # function to get value from configuration with default, if not found
   def cfg_get_default(sec, opt, default):
     if config.has_option(sec, opt):
       return config.get(sec, opt)
     else:
       return default
+  # function to get common and processor specific settings
+  def get_specific_config(config, processor):
+    pName = "_" + processor + "_"
+    dName = "_variables_"
+    data = dict(processor = processor)
+    # get common variables, if defined
+    if config.has_section(dName):
+      for opt in config.options(dName): data[opt] = config.get(dName, opt)
+    # get processor specific variables, if defined
+    if config.has_section(pName):
+      for opt in config.options(pName): data[opt] = config.get(pName, opt)
+    return data
   rules = list()
   targets = list()
   for name in config.sections():
-    if name == "_rule_": continue
+    # only sections, which do not start and end with "_"
+    if name.startswith("_") and name.endswith("_"): continue
     try:
       data = dict(name = cfg_get_default(name, "name", name),
                   tab = "\t",
@@ -97,7 +111,7 @@ def create_rules(config):
                   simopts = cfg_get_default(name, "simopts", ""),
                   shellopts = cfg_get_default(name, "shellopts", ""))
       for p in config.get(name, "processors").split():
-        d = dict(processor = p)
+        d = get_specific_config(config, p)
         d.update(data)
         rules.append(config.get("_rule_", "rule", False, d))
         targets.append(config.get(name, "target", False, d))
