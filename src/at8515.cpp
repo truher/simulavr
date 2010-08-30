@@ -42,8 +42,7 @@ AvrDevice_at90s8515::AvrDevice_at90s8515():
     flagJMPInstructions = false;
     flagMULInstructions = false;
     flagMOVWInstruction = false;
-    fuseBitsSize = 2;
-    fuseBits = 0xfffffffd; // uuuu uu01
+    fuses.SetFuseConfiguration(2, 0xfffffffd); // uuuu uu01
     irqSystem = new HWIrqSystem(this, 2, 13);
     eeprom= new HWEeprom(this, NULL, 512, 0);
     stack = new HWStackSram(this, 16);

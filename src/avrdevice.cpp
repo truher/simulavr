@@ -146,7 +146,7 @@ void AvrDevice::Load(const char* fname) {
                 eeprom->WriteMem(tmp, offset, size);
             } else if(sec->vma >= 0x820000 && sec->vma < 0x820400) {
                 // read fuses, if available, space from 0x820000 to 0x820400
-                if(!LoadFuses(tmp, size)) {
+                if(!fuses.LoadFuses(tmp, size)) {
                     free(tmp); // free memory before abort program
                     avr_error("wrong byte size of fuses");
                 }
@@ -260,8 +260,7 @@ AvrDevice::AvrDevice(unsigned int _ioSpaceSize,
     devSignature(sigVal),
     lockBits(0xff),
     lockBitsSize(2),
-    fuseBits(0),
-    fuseBitsSize(2),
+    fuses(),
     flagIWInstructions(true),
     flagJMPInstructions(true),
     flagIJMPInstructions(true),
@@ -273,6 +272,8 @@ AvrDevice::AvrDevice(unsigned int _ioSpaceSize,
     flagTiny10(false),
     flagTiny1x(false),
     flagXMega(false) {
+    PC_size = 2;
+
     dump_manager = DumpManager::Instance();
     dump_manager->registerAvrDevice(this);
     
@@ -511,14 +512,16 @@ int AvrDevice::Step(bool &untilCoreStepFinished, SystemClockOffset *nextStepIn_n
 }
 
 void AvrDevice::Reset() {
-    PC_size = 2;
-    PC = 0;
+
+    // reset PC
+    PC = fuses.GetResetAddr();
+    cPC = PC;
 
     vector<Hardware *>::iterator ii;
     for(ii= hwResetList.begin(); ii != hwResetList.end(); ii++)
         (*ii)->Reset();
 
-    PC = 0; cPC=0;
+    // reset status flags
     *status = 0;
 
     //init the old static vars from Step()
@@ -635,20 +638,6 @@ bool AvrDevice::LoadLockBits(const unsigned char *buffer, int size) {
 void AvrDevice::SetLockBits(unsigned char bits) {
     // bits can only set to 0, not back to 1 by this operation! Unused bits are set to 1.
     lockBits = (lockBits & bits) | ~((1 << lockBitsSize) - 1);
-}
-
-bool AvrDevice::LoadFuses(const unsigned char *buffer, int size) {
-    int fSize = ((fuseBitsSize - 1) / 8) + 1;
-    // check buffer size
-    if(fSize != size)
-        return false;
-    // store fuse values
-    fuseBits = 0;
-    for(int i = (fSize - 1); i >= 0; --i) {
-        fuseBits <<= 8;
-        fuseBits |= buffer[i];
-    }
-    return true;
 }
 
 // EOF

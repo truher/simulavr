@@ -27,6 +27,7 @@
 #include "hweeprom.h"
 #include "hwwado.h"
 #include "hwsreg.h"
+#include "flash.h"
 #include "avrerror.h"
 #include "avrfactory.h"
 
@@ -93,35 +94,36 @@ AvrDevice_atmega668base::AvrDevice_atmega668base(unsigned ram_bytes,
           &adc6,
           &adc7)
 { 
-    flagJMPInstructions = (flash_bytes > 8U * 1024U) ? true : false;
-    if(devtype == DEV688_48) {
-        fuseBits = 0xffffdfd9; // uuu1 1101 1111 1101 1001
-        fuseBitsSize = 17;
-    } else {
-        fuseBits = 0xfff9dfd9; // u001 1101 1111 1101 1001
-        fuseBitsSize = 19;
-    }
-    lockBitsSize = 6;
-    irqSystem = new HWIrqSystem(this, (flash_bytes > 8U * 1024U) ? 4 : 2, 26);
-    
-    eeprom = new HWEeprom(this, irqSystem, ee_bytes, 23, HWEeprom::DEVMODE_EXTENDED); 
-    stack = new HWStackSram(this, 16);
-
     unsigned int pgsize;
     unsigned int nrwwstart;
+
     if(devtype == DEV688_48) {
         pgsize = 32;
         nrwwstart = 0; // no RWW area available
+        fuses.SetFuseConfiguration(17, 0xffffdf62); // uuu1 1101 1111 0110 0010
     } else if(devtype == DEV688_88) {
         pgsize = 32;
         nrwwstart = 0xc00;
+        fuses.SetFuseConfiguration(19, 0xfff9df62); // u001 1101 1111 0110 0010
+        fuses.SetBootloaderConfig(nrwwstart, Flash->GetSize() - nrwwstart, 17, 16);
     } else if(devtype == DEV688_168) {
         pgsize = 64;
         nrwwstart = 0x1c00;
+        fuses.SetFuseConfiguration(19, 0xfff9df62); // u001 1101 1111 0110 0010
+        fuses.SetBootloaderConfig(nrwwstart, Flash->GetSize() - nrwwstart, 17, 16);
     } else if(devtype == DEV688_328) {
         pgsize = 64;
         nrwwstart = 0x3800;
+        fuses.SetFuseConfiguration(19, 0xffffd962); // u111 1101 1001 0110 0010
+        fuses.SetBootloaderConfig(nrwwstart, Flash->GetSize() - nrwwstart, 9, 8);
     }
+    flagJMPInstructions = (flash_bytes > 8U * 1024U) ? true : false;
+    lockBitsSize = 6;
+    irqSystem = new HWIrqSystem(this, (flash_bytes > 8U * 1024U) ? 4 : 2, 26);
+
+    eeprom = new HWEeprom(this, irqSystem, ee_bytes, 23, HWEeprom::DEVMODE_EXTENDED);
+    stack = new HWStackSram(this, 16);
+
     spmRegister = new FlashProgramming(this, pgsize, nrwwstart, FlashProgramming::SPM_MEGA_MODE);
 
     RegisterPin("AREF", &aref);

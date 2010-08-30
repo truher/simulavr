@@ -79,8 +79,6 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         
         unsigned char lockBits; //!< stores the lock bits
         int lockBitsSize;       //!< how much lock bits are available
-        unsigned long fuseBits; //!< store fuses
-        int fuseBitsSize;       //!< how much fuse bits are available (determines number of fuse bytes)
 
     public:
         Breakpoints BP;
@@ -93,7 +91,8 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         
         int PC_size;
         AvrFlash *Flash;
-        FlashProgramming * spmRegister;
+        FlashProgramming *spmRegister;
+        AvrFuses fuses;
         HWEeprom *eeprom;
         Data *data;
         HWIrqSystem *irqSystem;
@@ -215,12 +214,6 @@ class AvrDevice: public SimulationMember, public TraceValueRegister {
         virtual void SetLockBits(unsigned char bits);
         //! Get lock bits (for LPM instruction)
         unsigned char GetLockBits(void) { return lockBits; }
-        //! Initialize fuses from elf, checks proper size
-        virtual bool LoadFuses(const unsigned char *buffer, int size);
-        //! Get fuse byte by index
-        unsigned char GetFuseByte(int index) { return (fuseBits >> (index * 8)) & 0xff; }
-        //! Get count of fuse bytes available
-        int GetFuseByteSize(void) { return (fuseBitsSize / 8) + 1; }
 };
 
 #endif

@@ -71,8 +71,7 @@ AvrDevice_attiny2313::AvrDevice_attiny2313():
 {
     flagJMPInstructions = false;
     flagMULInstructions = false;
-    fuseBits = 0xffffdf64; // uuu1 1101 1111 0110 0100
-    fuseBitsSize = 17;
+    fuses.SetFuseConfiguration(17, 0xffffdf64); // uuu1 1101 1111 0110 0100
     irqSystem = new HWIrqSystem(this, 2, 19); //2 bytes per vector, 19 vectors
     eeprom = new HWEeprom(this, irqSystem, 128, 17, HWEeprom::DEVMODE_EXTENDED); 
     stack = new HWStackSram(this, 8);

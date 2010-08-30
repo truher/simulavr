@@ -33,6 +33,7 @@
 #include "hweeprom.h"
 #include "hwwado.h"
 #include "hwsreg.h"
+#include "flash.h"
 
 #include "avrfactory.h"
 
@@ -81,8 +82,8 @@ AvrDevice_atmega128::AvrDevice_atmega128():
     aref()
 {
     flagELPMInstructions = true;
-    fuseBits = 0xfffd99e1; // uu01 1001 1001 1110 0001
-    fuseBitsSize = 18;
+    fuses.SetFuseConfiguration(18, 0xfffd99e1); // uu01 1001 1001 1110 0001
+    fuses.SetBootloaderConfig(0xf000, Flash->GetSize() - 0xf000, 9, 8);
     lockBitsSize = 6;
     irqSystem = new HWIrqSystem(this, 4, 35); //4 bytes per vector, 35 vectors
     eeprom = new HWEeprom( this, irqSystem, 4096, 22); 

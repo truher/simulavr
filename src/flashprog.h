@@ -99,4 +99,36 @@ class FlashProgramming: public Hardware {
         
 };
 
+//! Support for fuse bits
+class AvrFuses {
+
+    private:
+        int fuseBitsSize;       //!< count of bits in fuses
+        unsigned long fuseBits; //!< fuse data
+        unsigned int nrwwAddr;  //!< start address NRWW section
+        unsigned int nrwwSize;  //!< size of NRWW section in byte
+        int bitPosBOOTSZ;       //!< bit position BOOTSZ fuses (2 Bit) in fuseBits
+        int bitPosBOOTRST;      //!< bit position BOOTRST fuses (1 Bit) in fuseBits
+        bool flagBOOTRST;       //!< value of BOOTRST fuse bit
+        int valueBOOTSZ;        //!< value of BOOTSZ fuse bits
+
+    public:
+        AvrFuses(void);
+        //! Configure fuses
+        void SetFuseConfiguration(int size, unsigned long defvalue);
+        //! Initialize fuses from elf, checks proper size
+        bool LoadFuses(const unsigned char *buffer, int size);
+        //! Get fuse byte by index
+        unsigned char GetFuseByte(int index) { return (fuseBits >> (index * 8)) & 0xff; }
+        //! Get count of fuse bytes available
+        int GetFuseByteSize(void) { return (fuseBitsSize / 8) + 1; }
+        //! Set bootloader support configuration
+        void SetBootloaderConfig(unsigned addr, int size, int bPosBOOTSZ, int bPosBOOTRST);
+        //! Get start address of bootloader section
+        unsigned int GetBLSStart(void);
+        //! Get reset address
+        unsigned int GetResetAddr(void);
+
+};
+
 #endif

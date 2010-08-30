@@ -34,6 +34,7 @@
 #include "hwwado.h"
 #include "hwsreg.h"
 #include "flashprog.h"
+#include "flash.h"
 
 #include "avrfactory.h"
 
@@ -82,8 +83,8 @@ AvrDevice_atmega16_32::AvrDevice_atmega16_32(unsigned ram_bytes,
               signature),   // Signature
     aref()
 {
-    fuseBits = 0xffff99e1; // 1001 1001 1110 0001
-    fuseBitsSize = 16;
+    fuses.SetFuseConfiguration(16, 0xffff99e1); // 1001 1001 1110 0001
+    fuses.SetBootloaderConfig(nrww_start, Flash->GetSize() - nrww_start, 9, 8);
     lockBitsSize = 6;
     irqSystem = new HWIrqSystem(this, 4, 21); //4 bytes per vector, 21 vectors
     eeprom = new HWEeprom(this, irqSystem, ee_bytes, 15);

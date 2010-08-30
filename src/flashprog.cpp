@@ -113,16 +113,16 @@ void FlashProgramming::Reset() {
 }
 
 void FlashProgramming::LPM_fuses_action(unsigned int reg, unsigned int addr) {
-    int byteSize = core->GetFuseByteSize();
+    int byteSize = core->fuses.GetFuseByteSize();
     if(addr == 0x0)
         // read fuse low byte to register
-        core->SetCoreReg(reg, core->GetFuseByte(0));
+        core->SetCoreReg(reg, core->fuses.GetFuseByte(0));
     else if((byteSize > 1) && (addr == 0x3))
         // read fuse high byte to register
-        core->SetCoreReg(reg, core->GetFuseByte(1));
+        core->SetCoreReg(reg, core->fuses.GetFuseByte(1));
     else if((byteSize > 2) && (addr == 0x2))
         // read fuse extended byte to register
-        core->SetCoreReg(reg, core->GetFuseByte(2));
+        core->SetCoreReg(reg, core->fuses.GetFuseByte(2));
     else {
         avr_warning("wrong address on read lock/fuses operation: 0x%x", addr);
         core->SetCoreReg(reg, 0);
@@ -168,9 +168,9 @@ int FlashProgramming::LPM_action(unsigned int reg, unsigned int xaddr) {
 
 int FlashProgramming::SPM_action(unsigned int data, unsigned int xaddr, unsigned int addr) {
   
-    // do nothing, if called from RWW section
+    // do nothing, if called from outside bootloader section
     unsigned int pc = core->PC * 2;
-    if((pc < nrww_addr) && (spm_opr != SPM_OPS_LOCKBITS))
+    if((pc < core->fuses.GetBLSStart()) && (spm_opr != SPM_OPS_LOCKBITS))
         return 0; // SPM operation is disabled, if executed from RWW section
 
     // calculate full address (RAMPZ:Z)
@@ -306,6 +306,83 @@ void FlashProgramming::SetSpmcr(unsigned char v) {
         }
     }
     //cout << "spmcr=0x" << hex << (unsigned int)spmcr_val << "," << action << "," << spm_opr << endl;
+}
+
+AvrFuses::AvrFuses(void):
+    fuseBitsSize(2),
+    fuseBits(0xfffffffd),
+    nrwwAddr(0),
+    nrwwSize(0),
+    bitPosBOOTRST(-1),
+    bitPosBOOTSZ(-1),
+    flagBOOTRST(true),
+    valueBOOTSZ(0)
+{
+    // do nothing!
+}
+
+void AvrFuses::SetFuseConfiguration(int size, unsigned long defvalue) {
+    fuseBitsSize = size;
+    fuseBits = defvalue;
+}
+
+bool AvrFuses::LoadFuses(const unsigned char *buffer, int size) {
+    int fSize = ((fuseBitsSize - 1) / 8) + 1;
+
+    // check buffer size
+    if(fSize != size)
+        return false;
+
+    // store fuse values
+    fuseBits = 0;
+    for(int i = (fSize - 1); i >= 0; --i) {
+        fuseBits <<= 8;
+        fuseBits |= buffer[i];
+    }
+
+    // update fuse values for some fuse bits
+    if(bitPosBOOTRST != -1 && bitPosBOOTRST < fuseBitsSize)
+        flagBOOTRST = ((fuseBits >> bitPosBOOTRST) & 0x1) == 0x1;
+    if(bitPosBOOTSZ != -1 && bitPosBOOTSZ < fuseBitsSize)
+        valueBOOTSZ = (fuseBits >> bitPosBOOTSZ) & 0x3;
+
+    return true;
+}
+
+void AvrFuses::SetBootloaderConfig(unsigned addr, int size, int bPosBOOTSZ, int bPosBOOTRST) {
+    nrwwAddr = addr;
+    nrwwSize = size;
+    bitPosBOOTSZ = bPosBOOTSZ;
+    bitPosBOOTRST = bPosBOOTRST;
+}
+
+unsigned int AvrFuses::GetBLSStart(void) {
+    unsigned int addr = nrwwAddr;
+    unsigned int size = nrwwSize;
+
+    if(addr == 0)
+        // if SPM functionality enabled and no rww functionality available, full flash is
+        // used as nrww area, so "BLS" starts from flash start
+        return 0;
+    if(valueBOOTSZ == 0)
+        return addr;
+    size >>= 1;
+    addr += size;
+    if(valueBOOTSZ == 1)
+        return addr;
+    size >>= 1;
+    addr += size;
+    if(valueBOOTSZ == 2)
+        return addr;
+    size >>= 1;
+    return addr + size;
+}
+
+unsigned int AvrFuses::GetResetAddr(void) {
+    if(flagBOOTRST)
+        return 0;
+    else
+        return GetBLSStart();
 }
 
 // EOF
