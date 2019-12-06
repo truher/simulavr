@@ -31,6 +31,7 @@
   #include "pysimulationmember.h"
   #include "hwport.h"
   #include "hwstack.h"
+  #include "hwuart.h"
   #include "avrsignature.h"
   #include "specialmem.h"
 
@@ -41,6 +42,7 @@
   #include "atmega128.h"
   #include "at4433.h"
   #include "at8515.h"
+  #include "atmega2560base.h"
   #include "atmega668base.h"
   #include "atmega16_32.h"
   #include "attiny2313.h"
@@ -127,6 +129,7 @@ namespace std {
 %include "hardware.h"
 %include "hwport.h"
 %include "hwstack.h"
+%include "hwuart.h"
 
 %feature("director") Pin;
 %include "pin.h"
@@ -205,6 +208,7 @@ namespace std {
 %include "atmega128.h"
 %include "at4433.h"
 %include "at8515.h"
+%include "atmega2560base.h"
 %include "atmega668base.h"
 %include "atmega16_32.h"
 %include "attiny2313.h"
