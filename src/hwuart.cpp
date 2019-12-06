@@ -25,6 +25,14 @@
 
 #include "hwuart.h"
 #include "helper.h"
+#include "avrerror.h"
+// for factory and pipe
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <pty.h>
+#include <string.h>
+
 
 //usr & ucsra
 #define RXC 0x80
@@ -674,6 +682,230 @@ HWUsart::HWUsart(AvrDevice *core,
         ucsrc_ubrrh_reg.releaseTraceValue();
         
     Reset();
+}
+
+PipeHWUsart::PipeHWUsart(AvrDevice *core,
+                         HWIrqSystem *s,
+                         PinAtPort tx,
+                         PinAtPort rx,
+                         PinAtPort xck,
+                         unsigned int vrx,
+                         unsigned int vudre,
+                         unsigned int vtx,
+                         const char *prefix,
+                         int instance_id,
+                         bool mxReg):
+    HWUsart(core, s, tx, rx, xck, vrx, vudre, vtx, instance_id, mxReg) {
+
+    if (instance_id < 0 || instance_id > 3) {
+        avr_error("instance id out of range: %d", instance_id);
+        exit(1);
+    }
+
+    symlinkname = (char *)malloc(strlen(prefix) + 2);
+    sprintf(symlinkname, "%s%d", prefix, instance_id);
+
+    if (unlink(symlinkname) < 0) {
+        avr_warning("unlink failed: %s", strerror(errno));
+        // ok to remove a nonexistent symlink
+    }
+    int sfd;
+    if (openpty(&mfd, &sfd, NULL, NULL, NULL) < 0) {
+        avr_error("openpty failed: %s", strerror(errno));
+        exit(1);
+    }
+    if (symlink(ttyname(sfd), symlinkname) < 0) {
+        avr_error("symlink failed: %s", strerror(errno));
+        exit(1);
+    }
+    int mflags;
+    if (mflags = fcntl(mfd, F_GETFL, 0) == -1) {
+        avr_error("fcntl F_GETFL failed: %s", strerror(errno));
+        exit(1);
+    }
+    if (fcntl(mfd, F_SETFL, mflags | O_NONBLOCK) < 0) {
+        avr_error("fcntl F_SETFL failed: %s", strerror(errno));
+        exit(1);
+    }
+    struct termios config;
+    if (tcgetattr(mfd, &config) < 0) {
+        avr_error("tcgetattr failed: %s", strerror(errno));
+        exit(1);
+    }
+    config.c_lflag &= ~(ECHO | ICANON);
+    if (tcsetattr(mfd, TCSAFLUSH, &config) < 0) {
+        avr_error("tcsetattr failed: %s", strerror(errno));
+        exit(1);
+    }
+}
+
+PipeHWUsart::~PipeHWUsart() {
+    if (unlink(symlinkname) < 0) {
+        avr_warning("unlink failed: %s", strerror(errno));
+    }
+}
+
+unsigned int PipeHWUsart::CpuCycleRx() {
+    if ( ucr & RXEN) {
+        unsigned char usr_old=usr;
+        int read_result = 0;
+        switch (rxState) {
+            case RX_WAIT_FOR_LOWEDGE:
+                unsigned char rxByte;
+                read_result = read(mfd, &rxByte, 1);
+                if(read_result > 0) {
+                    //avr_warning("read %s %x", symlinkname, rxByte);
+                    rxState=RX_READ_STARTBIT;
+                    cntRxSamples=0;
+                    rxDataTmp = rxByte;
+                }
+                break;
+
+            case RX_READ_STARTBIT:
+                cntRxSamples++;
+                if (cntRxSamples>15) {
+                    cntRxSamples=0;
+                    rxState= RX_READ_DATABIT;
+                    rxBitCnt=0;
+                }
+                break;
+
+            case RX_READ_DATABIT:
+                cntRxSamples++;
+                if (cntRxSamples>15) {
+                    rxBitCnt++;
+                    cntRxSamples=0;
+                    if (rxBitCnt>frameLength) {
+                        rxState=RX_READ_STOPBIT;
+                    }
+                }
+                break;
+
+            case RX_READ_STOPBIT:
+                cntRxSamples++;
+                udrRead=rxDataTmp&0xff;
+                usr&=0xff-FE;
+                usr|=RXC;
+                rxState = RX_WAIT_FOR_LOWEDGE;
+                break;
+
+            case RX_DISABLED:
+                break;
+        }
+
+        // check if as a result of this operation any interrupt flags sholud be changed.
+        unsigned char irqold= ucr&usr_old;
+        unsigned char irqnew= ucr&usr;
+
+        unsigned char changed=irqold^irqnew;
+        unsigned char setnew= changed&irqnew;
+        unsigned char clearnew= changed& (~irqnew);
+
+        CheckForNewSetIrq(setnew);
+        CheckForNewClearIrq(clearnew);
+    }
+    return 0;
+}
+
+unsigned int PipeHWUsart::CpuCycleTx() {
+    baudCnt16++;
+    if(baudCnt16 >= 16) {
+        baudCnt16 = 0;
+        if (ucr & TXEN ) {
+            unsigned char usr_old=usr;
+
+            if (!(usr & UDRE) ) { // there is new data in udr
+                if ((usr & TXC)| (txState==TX_FIRST_RUN)|(txState==TX_FINISH)) { //transmitter is empty
+                    txDataTmp=udrWrite;
+                    //usr|=UDRE; // delay set UDRE until the end
+                    usr&=0xff-TXC; // the transmitter is not ready
+                    txState=TX_SEND_STARTBIT;
+                }
+            }
+
+            switch (txState) {
+                case TX_SEND_STARTBIT:
+                    txState=TX_SEND_DATABIT;
+                    txBitCnt=0;
+                    break;
+
+                case TX_SEND_DATABIT:
+                    txBitCnt++;
+                    if (txBitCnt>frameLength)  {
+                        txState=TX_SEND_STOPBIT;
+                    }
+                    break;
+
+                case TX_SEND_STOPBIT:
+                    //avr_warning("write %s %x", symlinkname, txDataTmp);
+                    if (write(mfd, &txDataTmp, 1) < 0) {
+                        avr_warning("write failed: %s", strerror(errno));
+                    }
+                    txState=TX_AFTER_STOPBIT;
+                    break;
+
+                case TX_AFTER_STOPBIT:
+                    usr|=TXC;
+                    usr|=UDRE;
+                    txState=TX_FINISH;
+                    break;
+
+                case TX_DISABLED:
+                case TX_FIRST_RUN:
+                case TX_FINISH:
+                    break;
+            }
+
+            // check if some interrupts should be caused as a result
+            // of this sending tact
+            unsigned char irqold= ucr&usr_old;
+            unsigned char irqnew= ucr&usr;
+
+            unsigned char changed=irqold^irqnew;
+            unsigned char setnew= changed&irqnew;
+            unsigned char clearnew= changed& (~irqnew);
+
+            CheckForNewSetIrq(setnew);
+            CheckForNewClearIrq(clearnew);
+        }
+    }
+    return 0;
+}
+
+HWUsartFactory::HWUsartFactory() : prefix(NULL) {
+}
+HWUsartFactory::HWUsartFactory(const char *prefix) : prefix(prefix) {
+}
+
+HWUsart* HWUsartFactory::makeUsart(AvrDevice *core,
+                         HWIrqSystem *irqs,
+                         PinAtPort tx,
+                         PinAtPort rx,
+                         PinAtPort xck,
+                         unsigned int rx_interrupt,
+                         unsigned int udre_interrupt,
+                         unsigned int tx_interrupt,
+                         int instance_id) const {
+    if (prefix == NULL)
+        return new HWUsart(core,
+                           irqs,
+                           tx,
+                           rx,
+                           xck,
+                           rx_interrupt,
+                           udre_interrupt,
+                           tx_interrupt,
+                           instance_id);
+    return new PipeHWUsart(core,
+                           irqs,
+                           tx,
+                           rx,
+                           xck,
+                           rx_interrupt,
+                           udre_interrupt,
+                           tx_interrupt,
+                           prefix,
+                           instance_id);
 }
 
 // EOF

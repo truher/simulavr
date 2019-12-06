@@ -89,8 +89,8 @@ class HWUart: public Hardware, public TraceValueRegister {
         T_RxState rxState;
         T_TxState txState;
 
-        unsigned int CpuCycleRx();
-        unsigned int CpuCycleTx();
+        virtual unsigned int CpuCycleRx();
+        virtual unsigned int CpuCycleTx();
 
         int cntRxSamples;
         int rxLowCnt;
@@ -173,6 +173,45 @@ class HWUsart: public HWUart {
         IOReg<HWUsart> ucsrc_reg,
                        ubrrh_reg,
                        ucsrc_ubrrh_reg;
+};
+
+class PipeHWUsart : public HWUsart {
+    protected:
+        char *symlinkname;
+        int mfd;
+
+        unsigned int CpuCycleRx();
+        unsigned int CpuCycleTx();
+    public:
+        PipeHWUsart(AvrDevice *core,
+                    HWIrqSystem *,
+                    PinAtPort tx,
+                    PinAtPort rx,
+                    PinAtPort xck,
+                    unsigned int rx_interrupt,
+                    unsigned int udre_interrupt,
+                    unsigned int tx_interrupt,
+                    const char *prefix,
+                    int instance_id = 0,
+                    bool mxReg = true);
+        ~PipeHWUsart();
+};
+
+class HWUsartFactory {
+    protected:
+        const char *prefix;
+    public:
+        HWUsartFactory();
+        HWUsartFactory(const char *prefix);
+        HWUsart* makeUsart(AvrDevice *core,
+                          HWIrqSystem *irqs,
+                          PinAtPort tx,
+                          PinAtPort rx,
+                          PinAtPort xck,
+                          unsigned int rx_interrupt,
+                          unsigned int udre_interrupt,
+                          unsigned int tx_interrupt,
+                          int instance_id = 0) const;
 };
 
 #endif

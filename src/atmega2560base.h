@@ -103,23 +103,26 @@ protected:
 
 public:
     AvrDevice_atmega2560base(unsigned ram_bytes, unsigned flash_bytes,
-                              unsigned ee_bytes, unsigned nrww_start);
+                             unsigned ee_bytes, unsigned nrww_start,
+                             const HWUsartFactory *hwusart_factory);
     ~AvrDevice_atmega2560base();
 };
 
 class AvrDevice_atmega2560: public AvrDevice_atmega2560base {
 public:
-    AvrDevice_atmega2560() : AvrDevice_atmega2560base(8 * 1024, 256 * 1024, 4 * 1024, 0x1f000) {}
+    AvrDevice_atmega2560() : AvrDevice_atmega2560base(8 * 1024, 256 * 1024, 4 * 1024, 0x1f000, NULL) {}
+    AvrDevice_atmega2560(const HWUsartFactory *hwusart_factory)
+        : AvrDevice_atmega2560base(8 * 1024, 256 * 1024, 4 * 1024, 0x1f000, hwusart_factory) {}
 };
 
 class AvrDevice_atmega1280: public AvrDevice_atmega2560base {
 public:
-    AvrDevice_atmega1280() : AvrDevice_atmega2560base(8 * 1024, 128 * 1024, 4 * 1024, 0xf000) {}
+    AvrDevice_atmega1280() : AvrDevice_atmega2560base(8 * 1024, 128 * 1024, 4 * 1024, 0xf000, NULL) {}
 };
 
 class AvrDevice_atmega640: public AvrDevice_atmega2560base {
 public:
-    AvrDevice_atmega640() : AvrDevice_atmega2560base(8 * 1024, 64 * 1024, 4 * 1024, 0x7000) {}
+    AvrDevice_atmega640() : AvrDevice_atmega2560base(8 * 1024, 64 * 1024, 4 * 1024, 0x7000, NULL) {}
 };
 
 #endif

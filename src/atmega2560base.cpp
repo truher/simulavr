@@ -85,9 +85,10 @@ AvrDevice_atmega2560base::~AvrDevice_atmega2560base() {
 }
 
 AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
-                                                     unsigned flash_bytes,
-                                                     unsigned ee_bytes,
-                                                     unsigned nrww_start):
+                                                   unsigned flash_bytes,
+                                                   unsigned ee_bytes,
+                                                   unsigned nrww_start,
+                                                   const HWUsartFactory *hwusart_factory):
     AvrDevice(0x200 - 32, // I/O space size (above ALU registers)
               ram_bytes,    // RAM size
               0,            // External RAM size
@@ -109,6 +110,9 @@ AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
     prescaler1(this, "1", &gtccr_reg, 0, 7),
     prescaler2(this, "2", PinAtPort(&portg, 4), &assr_reg, 5, &gtccr_reg, 1, 7)
 { 
+    if (hwusart_factory == NULL) {
+        hwusart_factory = new HWUsartFactory();
+    }
     flagELPMInstructions = true;
     flagEIJMPInstructions = true;
     fuses->SetFuseConfiguration(19, 0xff9962);
@@ -299,7 +303,7 @@ AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
     
     wado = new HWWado(this);
 
-    usart0 = new HWUsart(this,
+    usart0 = hwusart_factory->makeUsart(this,
                          irqSystem,
                          PinAtPort(&porte, 1),    // TXD0
                          PinAtPort(&porte, 0),    // RXD0
@@ -308,7 +312,7 @@ AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
                          26,   // (27) UDRE vector
                          27);  // (28) TX complete vector
 
-    usart1 = new HWUsart(this,
+    usart1 = hwusart_factory->makeUsart(this,
                          irqSystem,
                          PinAtPort(&portd, 3),    // TXD1
                          PinAtPort(&portd, 2),    // RXD1
@@ -318,7 +322,7 @@ AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
                          38,   // (39) TX complete vector
                          1);   // instance_id for tracking in UI
 
-    usart2 = new HWUsart(this,
+    usart2 = hwusart_factory->makeUsart(this,
                          irqSystem,
                          PinAtPort(&porth, 1),    // TXD2
                          PinAtPort(&porth, 0),    // RXD2
@@ -328,7 +332,7 @@ AvrDevice_atmega2560base::AvrDevice_atmega2560base(unsigned ram_bytes,
                          53,   // (54) TX complete vector
                          2);   // instance_id for tracking in UI
 
-    usart3 = new HWUsart(this,
+    usart3 = hwusart_factory->makeUsart(this,
                          irqSystem,
                          PinAtPort(&portj, 1),    // TXD3
                          PinAtPort(&portj, 0),    // RXD3
