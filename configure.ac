@@ -34,6 +34,7 @@ if test "$link_libdl_enable" = "yes"; then
   fi
   EXTRA_LIBS="$EXTRA_LIBS -ldl -lz"
 fi
+AC_CHECK_LIB(util, openpty, [EXTRA_LIBS="-lutil"])
 
 ####
 # check for OS and build system: MSYS/MingW
